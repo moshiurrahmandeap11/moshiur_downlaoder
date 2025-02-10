@@ -14,13 +14,28 @@ import os
 import yt_dlp
 import threading
 
-# Function to handle the download and progress tracking
+def update_progress(d, progress_var, speed_var):
+    downloaded_bytes = d.get('downloaded_bytes', 0)  # ডাউনলোড হওয়া সাইজ
+    total_bytes = d.get('total_bytes')  # মোট সাইজ
+
+    if total_bytes:  # total_bytes থাকলে হিসাব কর
+        percent = (downloaded_bytes / total_bytes) * 100
+    else:
+        percent = 0  # total_bytes না থাকলে 0%
+
+    progress_var.set(f"{percent:.2f}%")
+    
+    # Speed যদি None হয়, তাহলে 0.00 B/s সেট কর
+    speed = d.get('speed', 0) or 0
+    speed_var.set(f"{speed:.2f} B/s")
+
 def download_video(url, progress_var, speed_var):
     ydl_opts = {
-        # 'format': 'bestvideo+bestaudio',
         'format': 'bestaudio[ext=m4a]+bestvideo[ext=mp4]',
         'progress_hooks': [lambda d: update_progress(d, progress_var, speed_var)],
         'outtmpl': '/home/moshiur/downloader/downloads/%(title)s.%(ext)s',
+        'noplaylist': True,
+        'nooverwrites': False,  # আগের ফাইল থাকলেও নতুন করে নামাবে
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -33,22 +48,13 @@ def download_audio(url, progress_var, speed_var):
         'audioformat': 'mp3',
         'progress_hooks': [lambda d: update_progress(d, progress_var, speed_var)],
         'outtmpl': '/home/moshiur/downloader/downloads/%(title)s.%(ext)s',
+        'noplaylist': True,
+        'nooverwrites': False,  # আগের ফাইল থাকলেও নতুন করে নামাবে
     }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
-def update_progress(d, progress_var, speed_var):
-    downloaded_bytes = d.get('downloaded_bytes', 0)  # ডাউনলোড হওয়া সাইজ
-    total_bytes = d.get('total_bytes')  # মোট সাইজ
-
-    if total_bytes:  # total_bytes থাকলে হিসাব কর
-        percent = (downloaded_bytes / total_bytes) * 100
-    else:
-        percent = 0  # total_bytes না থাকলে 0%
-
-    progress_var.set(f"{percent:.2f}%")
-    speed_var.set(f"{d.get('speed', 0) or 0:.2f} B/s")
 
 
 def on_select(option, url_entry, progress_var, speed_var):
